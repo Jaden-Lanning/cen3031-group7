@@ -383,6 +383,8 @@ export function HomePage() {
 
                 <CardAction>
                   <CreateTaskDialog
+                    projects={projects}
+                    projectsError={projectsError}
                     onTaskCreated={(task) =>
                       setTasks((currentTasks) => [task, ...currentTasks])
                     }
@@ -429,6 +431,15 @@ export function HomePage() {
                               {task.description}
                             </p>
                           )}
+
+                          <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
+                            <FolderKanban className="mt-px size-3 shrink-0" aria-hidden="true" />
+                            <span className="break-words">
+                              {task.projectId
+                                ? projects.find((project) => project.id === task.projectId)?.name || "Project unavailable"
+                                : "No project assigned"}
+                            </span>
+                          </p>
 
                           {task.dueDate && (
                             <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">

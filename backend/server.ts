@@ -4,6 +4,8 @@ import bcrypt from "bcrypt";
 import session from "express-session";
 import { db } from "./src/prisma/db.js";
 import { validateProjectInput } from "./src/projects/validation.js";
+import { findOwnedProject, UUID_PATTERN } from "./src/projects/access.js";
+import { pathToFileURL } from "node:url";
 
 declare module "express-session" {
   interface SessionData {
@@ -11,7 +13,7 @@ declare module "express-session" {
   }
 }
 
-const app = express();
+export const app = express();
 const PORT = 3001;
 
 app.use(
@@ -530,10 +532,27 @@ app.get("/api/tasks", async (req: Request, res: Response) => {
       });
     }
 
+    const { projectId, includeCompleted } = req.query;
+
+    if (projectId !== undefined) {
+      if (typeof projectId !== "string" || !UUID_PATTERN.test(projectId)) {
+        return res.status(400).json({ message: "Project ID must be a valid UUID" });
+      }
+
+      if (!(await findOwnedProject(projectId, req.session.userId))) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+    }
+
+    if (includeCompleted !== undefined && includeCompleted !== "true" && includeCompleted !== "false") {
+      return res.status(400).json({ message: "includeCompleted must be true or false" });
+    }
+
     const tasks = await db.task.findMany({
       where: {
         userId: req.session.userId,
-        completedAt: null,
+        ...(typeof projectId === "string" ? { projectId } : {}),
+        ...(includeCompleted === "true" ? {} : { completedAt: null }),
       },
       orderBy: {
         createdAt: "desc",
@@ -560,7 +579,17 @@ app.post("/api/tasks", async (req: Request, res: Response) => {
       });
     }
 
-    const { title, description, dueDate, priority } = req.body;
+    const { title, description, dueDate, priority, projectId } = req.body ?? {};
+
+    if (typeof projectId !== "string" || !UUID_PATTERN.test(projectId)) {
+      return res.status(400).json({ message: "A valid project ID is required" });
+    }
+
+    const project = await findOwnedProject(projectId, req.session.userId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
 
     const trimmedTitle = typeof title === "string" ? title.trim() : "";
 
@@ -600,6 +629,7 @@ app.post("/api/tasks", async (req: Request, res: Response) => {
         dueDate: taskDueDate,
         priority: taskPriority,
         userId: req.session.userId,
+        projectId: project.id,
       },
     });
 
@@ -615,9 +645,6 @@ app.post("/api/tasks", async (req: Request, res: Response) => {
     });
   }
 });
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 app.patch(
   "/api/tasks/:id/complete",
@@ -665,6 +692,8 @@ app.patch(
   }
 );
 
-app.listen(PORT, () => {
-  console.log(`Backend running on http://localhost:${PORT}`);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  app.listen(PORT, () => {
+    console.log(`Backend running on http://localhost:${PORT}`);
+  });
+}
