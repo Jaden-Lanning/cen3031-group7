@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowLeft, CalendarDays, FolderKanban } from "lucide-react";
+import { GoalSyncBrand } from "@/components/GoalSyncBrand";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -119,10 +120,10 @@ export function CreateProjectPage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
-          <Link to="/home" className="text-xl font-bold tracking-tight">
-            Goal Sync
+      <header className="border-b bg-card/90">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-6 py-4">
+          <Link to="/home" className="rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <GoalSyncBrand />
           </Link>
 
           <Link to="/home" className={buttonVariants({ variant: "ghost" })}>
@@ -132,7 +133,7 @@ export function CreateProjectPage() {
       </header>
 
       <div className="mx-auto max-w-5xl px-6 py-10">
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="text-xs font-semibold tracking-[0.16em] text-primary">
           YOUR WORKSPACE
         </p>
 
@@ -153,7 +154,7 @@ export function CreateProjectPage() {
           </Alert>
         ) : (
           <div className="mt-8 grid items-start gap-6 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-            <Card>
+            <Card className="[&_input]:h-10">
               <CardHeader>
                 <CardTitle>Project details</CardTitle>
                 <CardDescription>
@@ -259,9 +260,9 @@ export function CreateProjectPage() {
             </Card>
 
             <aside aria-label="Project preview">
-              <Card>
+              <Card className="border-t-2 border-t-primary">
                 <CardHeader>
-                  <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-muted">
+                  <div className="mb-2 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
                     <FolderKanban className="size-5" />
                   </div>
 

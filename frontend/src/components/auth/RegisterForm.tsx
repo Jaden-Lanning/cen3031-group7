@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowRight, UserRoundPlus } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -57,9 +58,10 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-t-4 border-t-primary/30 [&_input]:h-11 [&_input]:bg-background/60">
       <CardHeader>
-        <CardTitle>Create Account</CardTitle>
+        <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><UserRoundPlus className="size-5" aria-hidden="true" /></span>
+        <CardTitle className="text-xl">Create Account</CardTitle>
         <CardDescription>
           Create your Goal Sync account to start managing projects and tasks.
         </CardDescription>
@@ -104,13 +106,13 @@ export function RegisterForm() {
           </div>
 
           {message && (
-            <Alert variant={success ? "default" : "destructive"}>
+            <Alert variant={success ? "default" : "destructive"} role={success ? "status" : "alert"} className={success ? "border-primary/20 bg-primary/5 text-primary" : undefined}>
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
 
           <Button type="submit" className="w-full">
-            Create Account
+            Create Account <ArrowRight aria-hidden="true" />
           </Button>
         </form>
       </CardContent>

@@ -160,6 +160,27 @@ const publicUser = (user: { id: string; name: string; email: string }) => ({
   email: user.email,
 });
 
+
+app.post("/api/logout", (req: Request, res: Response) => {
+  req.session.destroy((error) => {
+    if (error) {
+      console.error("Logout error:", error);
+
+      return res.status(500).json({
+        message: "Unable to log out",
+      });
+    }
+
+    res.clearCookie("connect.sid");
+
+    return res.status(200).json({
+      message: "Logout successful",
+    });
+  });
+});
+
+
+
 app.get("/api/friends", async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
