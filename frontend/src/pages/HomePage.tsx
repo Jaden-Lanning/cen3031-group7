@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { Activity, ArrowUpRight, CalendarDays, Check, FolderKanban, ListTodo, LogOut, Plus, Target, Users, UserRound, X} from "lucide-react";
+import { Activity, ArrowUpRight, CalendarDays, Check, FolderKanban, ListTodo, LogOut, Plus, ShieldCheck, Target, Users, UserRound, X} from "lucide-react";
 import { GoalSyncBrand } from "@/components/GoalSyncBrand";
 import type { Task } from "@/components/tasks/CreateTaskDialog";
 import type { Project } from "@/types/project";
@@ -265,6 +265,11 @@ export function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
+            {user.role === "admin" && (
+              <Link to="/admin" className={buttonVariants({ variant: "outline" })}>
+                <ShieldCheck aria-hidden="true" /> Admin Dashboard
+              </Link>
+            )}
             <div className="hidden text-right sm:block">
               <p className="max-w-64 truncate text-sm font-medium">{user.name}</p>
               <p className="max-w-64 truncate text-xs text-muted-foreground">{user.email}</p>

@@ -6,6 +6,7 @@ import { db } from "./src/prisma/db.js";
 import { validateProjectInput } from "./src/projects/validation.js";
 import { findOwnedProject, UUID_PATTERN } from "./src/projects/access.js";
 import { pathToFileURL } from "node:url";
+import { requireAdmin } from "./src/admin/authorization.js";
 
 declare module "express-session" {
   interface SessionData {
@@ -578,6 +579,50 @@ app.get("/api/me", async (req: Request, res: Response) => {
     });
   }
 });
+const adminUserSelect = { id: true, name: true, email: true, role: true, createdAt: true } as const;
+
+app.get("/api/admin/users", requireAdmin, async (_req: Request, res: Response) => {
+  try {
+    const users = await db.user.findMany({
+      select: adminUserSelect,
+      orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+    });
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.error("Admin user list error:", error);
+    return res.status(500).json({ message: "Unable to load users" });
+  }
+});
+
+app.patch("/api/admin/users/:id/role", requireAdmin, async (req: Request<{ id: string }>, res: Response) => {
+  if (!UUID_PATTERN.test(req.params.id)) {
+    return res.status(400).json({ message: "User ID must be a valid UUID" });
+  }
+  const role = req.body?.role;
+  if (role !== "user" && role !== "admin") {
+    return res.status(400).json({ message: "Role must be user or admin" });
+  }
+  const userId = req.params.id.toLowerCase();
+  if (userId === req.session.userId?.toLowerCase()) {
+    return res.status(400).json({ message: "You cannot change your own role" });
+  }
+
+  try {
+    const user = await db.user.update({
+      where: { id: userId },
+      data: { role },
+      select: adminUserSelect,
+    });
+    return res.status(200).json({ message: "User role updated", user });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      return res.status(404).json({ message: "User not found" });
+    }
+    console.error("Admin role update error:", error);
+    return res.status(500).json({ message: "Unable to update user role" });
+  }
+});
+
 const TASK_PRIORITIES = ["low", "medium", "high"];
 
 app.get("/api/tasks", async (req: Request, res: Response) => {
