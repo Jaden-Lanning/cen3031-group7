@@ -3,7 +3,8 @@ import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { Activity, ArrowUpRight, CalendarDays, Check, FolderKanban, ListTodo, LogOut, Plus, Target, Users, UserRound, X} from "lucide-react";
 import { GoalSyncBrand } from "@/components/GoalSyncBrand";
-import { CreateTaskDialog, type Task, } from "@/components/tasks/CreateTaskDialog";
+import type { Task } from "@/components/tasks/CreateTaskDialog";
+import type { Project } from "@/types/project";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle, } from "@/components/ui/card";
@@ -25,14 +26,6 @@ type User = {
   email: string;
   role: string;
   attributes: unknown;
-};
-
-type Project = {
-  id: string;
-  name: string;
-  description: string;
-  goal: string;
-  targetDate: string | null;
 };
 
 type Friend = {
@@ -67,6 +60,7 @@ export function HomePage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsError, setProjectsError] = useState("");
+  const [tasksError, setTasksError] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [showAddFriend, setShowAddFriend] = useState(false);
@@ -196,13 +190,19 @@ export function HomePage() {
 
         await Promise.all([loadFriends(), loadProjects()]);
 
-        const tasksResponse = await fetch("http://localhost:3001/api/tasks", {
-          credentials: "include",
-        });
+        try {
+          const tasksResponse = await fetch("http://localhost:3001/api/tasks", {
+            credentials: "include",
+          });
 
-        if (tasksResponse.ok) {
-          const tasksData = await tasksResponse.json();
-          setTasks(tasksData.tasks);
+          if (tasksResponse.ok) {
+            const tasksData = await tasksResponse.json();
+            setTasks(tasksData.tasks);
+          } else {
+            setTasksError("Unable to load your task overview. Please refresh to try again.");
+          }
+        } catch {
+          setTasksError("Unable to connect to the server to load tasks.");
         }
       } catch (error) {
         console.error(error);
@@ -214,27 +214,6 @@ export function HomePage() {
 
     loadUser();
   }, [navigate]);
-
-  const handleCompleteTask = async (taskId: string) => {
-    try {
-      const response = await fetch(
-        `http://localhost:3001/api/tasks/${taskId}/complete`,
-        {
-          method: "PATCH",
-          credentials: "include",
-        }
-      );
-
-      if (response.ok) {
-        setTasks((currentTasks) =>
-          currentTasks.filter((task) => task.id !== taskId)
-        );
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
 
   const handleLogout = async () => {
   try {
@@ -266,6 +245,16 @@ export function HomePage() {
   if (!user) {
     return null;
   }
+
+  const overviewTasks = [...tasks].sort((a, b) => {
+    if (a.dueDate && b.dueDate) {
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+        || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    }
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  }).slice(0, 5);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -320,7 +309,7 @@ export function HomePage() {
         <section className="workspace-banner mb-9 rounded-2xl border bg-card p-6 sm:p-8">
           <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-primary">
             <Target className="size-4" aria-hidden="true" />
-            YOUR WORKSPACE
+            YOUR DASHBOARD
           </p>
 
           <h2 className="mt-3 break-words text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -378,45 +367,26 @@ export function HomePage() {
                 <CardTitle className="flex items-center gap-2">Tasks <span className="rounded-md bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{tasks.length}</span></CardTitle>
 
                 <CardDescription>
-                  Track what needs to be done and monitor progress.
+                  Your next five open tasks across projects. Open a project to manage its tasks.
                 </CardDescription>
-
-                <CardAction>
-                  <CreateTaskDialog
-                    projects={projects}
-                    projectsError={projectsError}
-                    onTaskCreated={(task) =>
-                      setTasks((currentTasks) => [task, ...currentTasks])
-                    }
-                  />
-                </CardAction>
               </CardHeader>
 
               <CardContent>
-                {tasks.length === 0 ? (
+                {tasksError ? (
+                  <Alert variant="destructive" role="alert"><AlertDescription>{tasksError}</AlertDescription></Alert>
+                ) : tasks.length === 0 ? (
                   <div className="empty-state">
                     <ListTodo className="mb-1 size-7 text-sky-600" aria-hidden="true" />
-                    <p className="font-medium text-foreground">Make room for your next step</p>
-                    <p>No tasks yet. Click + to create one.</p>
+                    <p className="font-medium text-foreground">No open tasks</p>
+                    <p>Open a project below to plan your next step.</p>
                   </div>
                 ) : (
-                  <ul className="max-h-64 space-y-2 overflow-y-auto">
-                    {tasks.map((task) => (
+                  <ul className="space-y-2">
+                    {overviewTasks.map((task) => (
                       <li
                         key={task.id}
-                        className="flex items-start gap-3 rounded-xl border bg-background/40 p-3 transition-colors hover:border-primary/30 hover:bg-primary/5"
                       >
-                        <Button
-                          variant="outline"
-                          size="icon-xs"
-                          aria-label={`Mark "${task.title}" as complete`}
-                          title="Mark as complete"
-                          className="mt-px rounded-full text-transparent hover:border-primary hover:bg-primary/10 hover:text-primary focus-visible:text-primary"
-                          onClick={() => handleCompleteTask(task.id)}
-                        >
-                          <Check />
-                        </Button>
-
+                        <Link to={`/projects/${task.projectId}`} className="flex items-start gap-3 rounded-xl border bg-background/40 p-3 outline-none transition-colors hover:border-primary/30 hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <p className="min-w-0 break-words text-sm font-medium">{task.title}</p>
@@ -425,12 +395,6 @@ export function HomePage() {
                               {task.priority}
                             </span>
                           </div>
-
-                          {task.description && (
-                            <p className="mt-1 break-words text-sm text-muted-foreground">
-                              {task.description}
-                            </p>
-                          )}
 
                           <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
                             <FolderKanban className="mt-px size-3 shrink-0" aria-hidden="true" />
@@ -448,9 +412,13 @@ export function HomePage() {
                             </p>
                           )}
                         </div>
+                        </Link>
                       </li>
                     ))}
                   </ul>
+                )}
+                {!tasksError && tasks.length > 5 && (
+                  <p className="mt-4 text-xs text-muted-foreground">Showing 5 of {tasks.length} open tasks. Open your projects below to manage the rest.</p>
                 )}
               </CardContent>
             </Card>
@@ -618,9 +586,10 @@ export function HomePage() {
           ) : (
             <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project) => (
-                <Card key={project.id} className="transition-[box-shadow,border-color] duration-200 hover:ring-primary/30 hover:shadow-md">
+                <Link key={project.id} to={`/projects/${project.id}`} aria-label={`Open project: ${project.name}`} className="group min-w-0 rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <Card className="h-full transition-shadow duration-200 group-hover:ring-primary/30 group-hover:shadow-md">
                   <CardHeader>
-                    <FolderKanban className="mb-3 size-5 text-primary" aria-hidden="true" />
+                    <div className="mb-3 flex items-center justify-between text-primary"><FolderKanban className="size-5" aria-hidden="true" /><ArrowUpRight className="size-4" aria-hidden="true" /></div>
                     <CardTitle className="break-words">
                       {project.name}
                     </CardTitle>
@@ -653,6 +622,7 @@ export function HomePage() {
                     </p>
                   </CardContent>
                 </Card>
+                </Link>
               ))}
             </div>
           )}

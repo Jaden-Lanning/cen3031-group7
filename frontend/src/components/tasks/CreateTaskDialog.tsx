@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import { Link } from "react-router";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -29,18 +28,16 @@ export type Task = {
   priority: TaskPriority;
   completedAt: string | null;
   userId: string;
-  projectId: string | null;
+  projectId: string;
 };
 
 type CreateTaskDialogProps = {
-  projects: { id: string; name: string }[];
-  projectsError?: string;
+  projectId: string;
   onTaskCreated: (task: Task) => void;
 };
 
-export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ projectId, onTaskCreated }: CreateTaskDialogProps) {
   const [open, setOpen] = useState(false);
-  const [projectId, setProjectId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -49,7 +46,6 @@ export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: Cre
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = () => {
-    setProjectId("");
     setTitle("");
     setDescription("");
     setDueDate("");
@@ -67,11 +63,6 @@ export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: Cre
 
   const handleCreateTask = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    if (projectsError || !projects.some((project) => project.id === projectId)) {
-      setMessage("Select one of your projects before creating a task.");
-      return;
-    }
 
     setMessage("");
     setSubmitting(true);
@@ -113,46 +104,21 @@ export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: Cre
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button variant="outline" size="icon-sm" aria-label="Create task" />
+          <Button />
         }
       >
-        <Plus />
+        <Plus aria-hidden="true" /> Create task
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
           <DialogDescription>
-            Add a new task to keep track of what needs to be done.
+            Add a task to this project to keep your next steps organized.
           </DialogDescription>
         </DialogHeader>
 
-        {projectsError ? (
-          <Alert variant="destructive" role="alert">
-            <AlertDescription>{projectsError}</AlertDescription>
-          </Alert>
-        ) : projects.length === 0 ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Tasks belong to projects. Create a project first, then add your tasks.</p>
-            <Link to="/projects/new" className={buttonVariants()}>Create a project</Link>
-          </div>
-        ) : (
         <form onSubmit={handleCreateTask} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="task-project">Project</Label>
-            <select
-              id="task-project"
-              value={projectId}
-              onChange={(event) => setProjectId(event.target.value)}
-              required
-              className="h-10 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            >
-              <option value="" disabled>Select a project</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
-          </div>
           <div className="space-y-2">
             <Label htmlFor="task-title">Title</Label>
             <Input
@@ -204,7 +170,7 @@ export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: Cre
           </div>
 
           {message && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert">
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
@@ -213,12 +179,11 @@ export function CreateTaskDialog({ projects, projectsError, onTaskCreated }: Cre
             <DialogClose render={<Button type="button" variant="outline" />}>
               Cancel
             </DialogClose>
-            <Button type="submit" disabled={submitting || !projectId}>
+            <Button type="submit" disabled={submitting}>
               {submitting ? "Creating..." : "Create Task"}
             </Button>
           </DialogFooter>
         </form>
-        )}
       </DialogContent>
     </Dialog>
   );

@@ -434,6 +434,62 @@ app.get("/api/projects", async (req: Request, res: Response) => {
   }
 });
 
+app.get("/api/projects/:id", async (req: Request<{ id: string }>, res: Response) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  if (!UUID_PATTERN.test(req.params.id)) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  try {
+    const project = await db.project.findFirst({
+      where: { id: req.params.id, ownerId: req.session.userId },
+      select: { id: true, name: true, description: true, goal: true, targetDate: true },
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    return res.status(200).json({ project });
+  } catch (error) {
+    console.error("Project detail error:", error);
+    return res.status(500).json({ message: "Unable to load project" });
+  }
+});
+
+app.put("/api/projects/:id", async (req: Request<{ id: string }>, res: Response) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  if (!UUID_PATTERN.test(req.params.id)) {
+    return res.status(404).json({ message: "Project not found" });
+  }
+
+  const result = validateProjectInput(req.body);
+  if (result.error !== undefined) {
+    return res.status(400).json({ message: result.error });
+  }
+
+  try {
+    const project = await db.project.update({
+      where: { id: req.params.id, ownerId: req.session.userId },
+      data: result.data,
+      select: { id: true, name: true, description: true, goal: true, targetDate: true },
+    });
+    return res.status(200).json({ message: "Project updated successfully", project });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      return res.status(404).json({ message: "Project not found" });
+    }
+    console.error("Project update error:", error);
+    return res.status(500).json({ message: "Unable to update project" });
+  }
+});
+
 app.post("/api/projects", async (req: Request, res: Response) => {
   if (!req.session.userId) {
     return res.status(401).json({
@@ -643,6 +699,34 @@ app.post("/api/tasks", async (req: Request, res: Response) => {
     return res.status(500).json({
       message: "Unable to create task",
     });
+  }
+});
+
+app.patch("/api/tasks/:id/status", async (req: Request<{ id: string }>, res: Response) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  if (!UUID_PATTERN.test(req.params.id)) {
+    return res.status(404).json({ message: "Task not found" });
+  }
+
+  const status = req.body?.status;
+  if (status !== "todo" && status !== "complete") {
+    return res.status(400).json({ message: "Status must be todo or complete" });
+  }
+
+  try {
+    const task = await db.task.update({
+      where: { id: req.params.id, userId: req.session.userId },
+      data: { completedAt: status === "complete" ? new Date() : null },
+    });
+    return res.status(200).json({ message: status === "complete" ? "Task completed" : "Task moved to to do", task });
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === "P2025") {
+      return res.status(404).json({ message: "Task not found" });
+    }
+    console.error("Task status error:", error);
+    return res.status(500).json({ message: "Unable to update task status" });
   }
 });
 
