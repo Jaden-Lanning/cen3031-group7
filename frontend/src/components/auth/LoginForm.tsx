@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { ArrowRight, LogIn } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -52,9 +53,10 @@ export function LoginForm() {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-t-4 border-t-primary [&_input]:h-11 [&_input]:bg-background/60">
       <CardHeader>
-        <CardTitle>Login</CardTitle>
+        <span className="mb-3 flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary"><LogIn className="size-5" aria-hidden="true" /></span>
+        <CardTitle className="text-xl">Welcome back</CardTitle>
         <CardDescription>
           Sign in to continue to your Goal Sync workspace.
         </CardDescription>
@@ -87,13 +89,13 @@ export function LoginForm() {
           </div>
 
           {message && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert">
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
 
           <Button type="submit" className="w-full">
-            Login
+            Login <ArrowRight aria-hidden="true" />
           </Button>
         </form>
       </CardContent>

@@ -28,13 +28,15 @@ export type Task = {
   priority: TaskPriority;
   completedAt: string | null;
   userId: string;
+  projectId: string;
 };
 
 type CreateTaskDialogProps = {
+  projectId: string;
   onTaskCreated: (task: Task) => void;
 };
 
-export function CreateTaskDialog({ onTaskCreated }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ projectId, onTaskCreated }: CreateTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -77,6 +79,7 @@ export function CreateTaskDialog({ onTaskCreated }: CreateTaskDialogProps) {
           description,
           dueDate: dueDate || null,
           priority,
+          projectId,
         }),
       });
 
@@ -101,17 +104,17 @@ export function CreateTaskDialog({ onTaskCreated }: CreateTaskDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
-          <Button variant="outline" size="icon-sm" aria-label="Create task" />
+          <Button />
         }
       >
-        <Plus />
+        <Plus aria-hidden="true" /> Create task
       </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
           <DialogDescription>
-            Add a new task to keep track of what needs to be done.
+            Add a task to this project to keep your next steps organized.
           </DialogDescription>
         </DialogHeader>
 
@@ -167,7 +170,7 @@ export function CreateTaskDialog({ onTaskCreated }: CreateTaskDialogProps) {
           </div>
 
           {message && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert">
               <AlertDescription>{message}</AlertDescription>
             </Alert>
           )}
