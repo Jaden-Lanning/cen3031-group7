@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, CalendarDays, Check, Circle, FolderKanban, ListTodo, LoaderCircle, Target } from "lucide-react";
 import { GoalSyncBrand } from "@/components/GoalSyncBrand";
 import { EditProjectDialog } from "@/components/projects/EditProjectDialog";
+import { DeleteProjectDialog } from "@/components/projects/DeleteProjectDialog";
 import { CreateTaskDialog, type Task } from "@/components/tasks/CreateTaskDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -239,7 +240,7 @@ function ProjectWorkspace({ projectId }: { projectId: string | undefined }) {
                 </Card>
               </section>
 
-              <aside aria-label="Project details">
+              <aside aria-label="Project details" className="space-y-6">
                 <Card>
                   <CardHeader><CardTitle>Project details</CardTitle></CardHeader>
                   <CardContent className="space-y-6">
@@ -252,6 +253,13 @@ function ProjectWorkspace({ projectId }: { projectId: string | undefined }) {
                       <p className="text-sm text-muted-foreground">{project.targetDate ? formatDate(project.targetDate) : "No target date set."}</p>
                     </div>
                   </CardContent>
+                </Card>
+                <Card className="border-destructive/30">
+                  <CardHeader>
+                    <CardTitle>Delete project</CardTitle>
+                    <CardDescription>Permanently remove this project and all its tasks.</CardDescription>
+                  </CardHeader>
+                  <CardContent><DeleteProjectDialog project={project} /></CardContent>
                 </Card>
               </aside>
             </div>
